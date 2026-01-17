@@ -2,10 +2,13 @@
  * API Service Layer
  * 
  * This file contains all API calls for the Fitness AI Journal app.
+ * Auth is handled via Supabase.
  * Replace the BASE_URL and implement the actual API logic in each function.
  * 
  * All functions return typed responses and throw errors on failure.
  */
+
+import { getSession } from './supabaseAuth';
 
 // ============================================================================
 // CONFIGURATION
@@ -18,13 +21,13 @@ async function fetchWithAuth<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem('auth_token');
+  const session = await getSession();
   
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...options.headers,
     },
   });
@@ -44,13 +47,9 @@ async function fetchWithAuth<T>(
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  createdAt: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
+  user_metadata?: {
+    display_name?: string;
+  };
 }
 
 export interface Goal {
@@ -88,56 +87,13 @@ export interface ChatResponse {
 }
 
 // ============================================================================
-// AUTH ENDPOINTS
+// AUTH ENDPOINTS (Handled by Supabase)
 // ============================================================================
 
 /**
- * POST /api/auth/login
- * Body: { email: string, password: string }
- * Returns: { user: User, token: string }
+ * Authentication is now handled by Supabase.
+ * Use signIn, signUp, and signOut from @/services/supabaseAuth
  */
-export async function login(email: string, password: string): Promise<AuthResponse> {
-  return fetchWithAuth<AuthResponse>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-/**
- * POST /api/auth/signup
- * Body: { email: string, password: string, name?: string }
- * Returns: { user: User, token: string }
- */
-export async function signup(
-  email: string,
-  password: string,
-  name?: string
-): Promise<AuthResponse> {
-  return fetchWithAuth<AuthResponse>('/auth/signup', {
-    method: 'POST',
-    body: JSON.stringify({ email, password, name }),
-  });
-}
-
-/**
- * POST /api/auth/logout
- * Returns: { success: boolean }
- */
-export async function logout(): Promise<{ success: boolean }> {
-  const result = await fetchWithAuth<{ success: boolean }>('/auth/logout', {
-    method: 'POST',
-  });
-  localStorage.removeItem('auth_token');
-  return result;
-}
-
-/**
- * GET /api/auth/me
- * Returns: User
- */
-export async function getCurrentUser(): Promise<User> {
-  return fetchWithAuth<User>('/auth/me');
-}
 
 // ============================================================================
 // GOALS ENDPOINTS
@@ -294,17 +250,26 @@ export async function clearChatHistory(): Promise<{ success: boolean }> {
 }
 
 // ============================================================================
-// AUTH STATE HELPERS
+// AUTH STATE HELPERS (Deprecated - use Supabase directly)
 // ============================================================================
 
+/**
+ * @deprecated Use Supabase auth directly: import { getSession } from '@/services/supabaseAuth'
+ */
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem('auth_token');
 }
 
+/**
+ * @deprecated Use Supabase auth directly
+ */
 export function setAuthToken(token: string): void {
   localStorage.setItem('auth_token', token);
 }
 
+/**
+ * @deprecated Use Supabase auth directly
+ */
 export function clearAuthToken(): void {
   localStorage.removeItem('auth_token');
 }

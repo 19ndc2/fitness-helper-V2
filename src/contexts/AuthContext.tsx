@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User } from '@/services/api';
-import { isAuthenticated, setAuthToken, clearAuthToken } from '@/services/api';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/services/supabaseAuth';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isLoggedIn: boolean;
-  login: (user: User, token: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,29 +16,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing auth on mount
-    // In a real app, you'd verify the token with the server
-    const checkAuth = async () => {
-      if (isAuthenticated()) {
-        // TODO: Call getCurrentUser() to verify token and get user data
-        // For now, we'll just check if token exists
-        // const userData = await getCurrentUser();
-        // setUser(userData);
+    // Listen to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    };
-    checkAuth();
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = useCallback((userData: User, token: string) => {
-    setAuthToken(token);
-    setUser(userData);
-  }, []);
-
-  const logout = useCallback(() => {
-    clearAuthToken();
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-  }, []);
+  };
 
   return (
     <AuthContext.Provider
@@ -47,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isLoggedIn: !!user,
-        login,
         logout,
       }}
     >
