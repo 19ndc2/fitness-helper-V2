@@ -101,15 +101,17 @@ export interface ChatResponse {
 
 /**
  * GET /api/goals
- * Returns: Goal[]
+ * Returns the user's single goal or null if no goal exists
+ * Returns: Goal | null
  */
-export async function getGoals(): Promise<Goal[]> {
-  return fetchWithAuth<Goal[]>('/goals');
+export async function getGoals(): Promise<Goal | null> {
+  return fetchWithAuth<Goal | null>('/goals');
 }
 
 /**
  * POST /api/goals
  * Body: { text: string }
+ * If a goal already exists, it will be replaced
  * Returns: Goal
  */
 export async function createGoal(text: string): Promise<Goal> {
