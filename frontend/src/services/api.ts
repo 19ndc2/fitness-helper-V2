@@ -15,7 +15,7 @@ import { getSession } from './supabaseAuth';
 // CONFIGURATION
 // ============================================================================
 
-const BACKEND_BASE_URL = '/api'; // Backend API for AI operations
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'; // Backend API for AI operations
 
 // Initialize Supabase client for direct database access
 const supabase = createClient(
@@ -372,23 +372,21 @@ export async function getFitnessPlan(): Promise<FitnessPlan | null> {
  * Returns: FitnessPlan
  */
 export async function generateFitnessPlan(): Promise<FitnessPlan> {
+  const session = await getSession();
+  
+  if (!session?.user?.id) {
+    throw new Error('User not authenticated');
+  }
+
   return fetchWithAuth<FitnessPlan>('/plan/generate', {
     method: 'POST',
+    body: JSON.stringify({ userId: session.user.id }),
   });
 }
 
 // ============================================================================
 // AI CHAT ENDPOINTS
 // ============================================================================
-
-/**
- * GET /api/chat/history
- * Returns chat history
- * Returns: ChatMessage[]
- */
-export async function getChatHistory(): Promise<ChatMessage[]> {
-  return fetchWithAuth<ChatMessage[]>('/chat/history');
-}
 
 /**
  * POST /api/chat
@@ -400,17 +398,6 @@ export async function sendChatMessage(message: string): Promise<ChatResponse> {
   return fetchWithAuth<ChatResponse>('/chat', {
     method: 'POST',
     body: JSON.stringify({ message }),
-  });
-}
-
-/**
- * DELETE /api/chat/history
- * Clear chat history
- * Returns: { success: boolean }
- */
-export async function clearChatHistory(): Promise<{ success: boolean }> {
-  return fetchWithAuth<{ success: boolean }>('/chat/history', {
-    method: 'DELETE',
   });
 }
 

@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/services/api';
-import { getChatHistory, sendChatMessage, clearChatHistory } from '@/services/api';
+import { sendChatMessage } from '@/services/api';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -32,15 +32,8 @@ export default function ChatPage() {
   };
 
   const loadHistory = async () => {
-    try {
-      const history = await getChatHistory();
-      setMessages(history);
-    } catch (error) {
-      // Chat history might be empty, that's okay
-      console.log('No chat history or error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Chat history is managed client-side only
+    setIsLoading(false);
   };
 
   const handleSend = async () => {
@@ -75,25 +68,9 @@ export default function ChatPage() {
     }
   };
 
-  const handleClear = async () => {
-    try {
-      await clearChatHistory();
-      setMessages([]);
-      toast({ title: 'Chat cleared' });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to clear chat',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleClear = () => {
+    setMessages([]);
+    toast({ title: 'Chat cleared' });
   };
 
   return (
