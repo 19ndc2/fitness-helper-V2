@@ -1,7 +1,7 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -13,9 +13,9 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Supabase with service role key (backend only)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
+const supabase: SupabaseClient = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_KEY || '',
   {
     auth: {
       autoRefreshToken: false,
@@ -24,16 +24,22 @@ const supabase = createClient(
   }
 );
 
+interface Document {
+  id: string;
+  is_embedded: boolean;
+  [key: string]: unknown;
+}
+
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
 // Update embeddings helper function
-async function updateEmbeddings(documents) {
+async function updateEmbeddings(documents: Document[]): Promise<Document[]> {
   try {
     // TODO: Implement embedding generation with HuggingFace
-    const updatedDocs = documents.map(doc => ({
+    const updatedDocs = documents.map((doc) => ({
       ...doc,
       is_embedded: true,
     }));
@@ -45,7 +51,7 @@ async function updateEmbeddings(documents) {
 }
 
 // Combined getPlan endpoint - fetches unembedded documents and updates embeddings
-app.get('/api/plan', async (req, res) => {
+app.get('/api/plan', async (req: Request, res: Response): Promise<void> => {
   try {
     // Fetch unembedded plans
     const { data: plans, error: plansError } = await supabase
@@ -74,7 +80,7 @@ app.get('/api/plan', async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getPlan endpoint:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
