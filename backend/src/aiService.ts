@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize Supabase with service role key (backend only)
+// ---------------------- Supabase Setup ----------------------
 const supabase: SupabaseClient = createClient(
   process.env.SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_KEY || '',
@@ -23,7 +23,7 @@ interface Document {
 }
 
 // ---------------------- Hugging Face Embeddings ----------------------
-export class HuggingFaceEmbeddings {
+export class HuggingFaceLangChainEmbeddings {
   client: InferenceClient;
   model: string;
 
@@ -32,28 +32,30 @@ export class HuggingFaceEmbeddings {
     this.model = model;
   }
 
-  async embedDocuments(texts: string[]): Promise<number[][]> {
+  /** Embed multiple documents */
+  async embedDocuments(documents: string[]): Promise<number[][]> {
     const embeddings: number[][] = [];
 
-    for (const text of texts) {
+    for (const doc of documents) {
       const res = await this.client.featureExtraction({
         model: this.model,
-        inputs: text,
+        inputs: doc,
         provider: 'hf-inference',
       });
 
-      if (!Array.isArray(res)) {
-        throw new Error('HF API response is not an array');
-      }
+      if (!Array.isArray(res)) throw new Error('HF API response is not an array');
 
-      embeddings.push(res as number[]);
+      // Flatten any nested arrays so we always return number[]
+      const flatEmbedding = Array.isArray(res[0]) ? (res as number[][]).flat() : (res as number[]);
+      embeddings.push(flatEmbedding);
     }
 
     return embeddings;
   }
 
-  async embedQuery(text: string): Promise<number[]> {
-    return (await this.embedDocuments([text]))[0];
+  /** Embed a single query */
+  async embedQuery(document: string): Promise<number[]> {
+    return (await this.embedDocuments([document]))[0];
   }
 }
 
@@ -61,13 +63,13 @@ export class HuggingFaceEmbeddings {
 export async function updateEmbeddings(documents: Document[]): Promise<Document[]> {
   try {
     const apiKey = process.env.HUGGINGFACE_API_KEY;
-    if (!apiKey) {
-      throw new Error('HUGGINGFACE_API_KEY environment variable is not set');
-    }
+    if (!apiKey) throw new Error('HUGGINGFACE_API_KEY environment variable is not set');
 
-    const embedder = new HuggingFaceEmbeddings(apiKey, 'sentence-transformers/all-mpnet-base-v2');
+    const embedder = new HuggingFaceLangChainEmbeddings(
+      apiKey,
+      'sentence-transformers/all-mpnet-base-v2'
+    );
 
-    // Extract text from documents
     const texts = documents.map((doc: any) => {
       const textParts = [
         doc.title || doc.name || '',
@@ -76,16 +78,14 @@ export async function updateEmbeddings(documents: Document[]): Promise<Document[
       ]
         .filter((text: string) => text.length > 0)
         .join(' ');
-
       return textParts || 'No content';
     });
 
     const embeddings = await embedder.embedDocuments(texts);
 
-    // Attach embeddings to documents
-    return documents.map((doc, index) => ({
+    return documents.map((doc, idx) => ({
       ...doc,
-      embedding: embeddings[index],
+      embedding: embeddings[idx],
       is_embedded: true,
     }));
   } catch (error) {
@@ -101,20 +101,15 @@ export async function fetchUnembeddedDocuments() {
       .from('plans')
       .select('*')
       .eq('is_embedded', false);
-
     if (plansError) throw plansError;
 
     const { data: entries, error: entriesError } = await supabase
       .from('entries')
       .select('*')
       .eq('is_embedded', false);
-
     if (entriesError) throw entriesError;
 
-    return {
-      plans: plans || [],
-      entries: entries || [],
-    };
+    return { plans: plans || [], entries: entries || [] };
   } catch (error) {
     console.error('Error fetching unembedded documents:', error);
     throw error;
@@ -127,13 +122,11 @@ export async function saveEmbeddingsToDB(updatedDocs: any[], userId: string) {
     const plans = updatedDocs.filter((doc: any) => doc.plan_text);
     const entries = updatedDocs.filter((doc: any) => doc.content && !doc.plan_text);
 
-    // Save plan embeddings
     for (const plan of plans) {
       const { error: planError } = await supabase
         .from('plans')
         .update({ is_embedded: true })
         .eq('id', plan.id);
-
       if (planError) throw planError;
 
       const { error: docError } = await supabase
@@ -144,22 +137,16 @@ export async function saveEmbeddingsToDB(updatedDocs: any[], userId: string) {
           content: plan.plan_text,
           vector: plan.embedding,
           embedding_model: 'sentence-transformers/all-mpnet-base-v2',
-          metadata: {
-            source_id: plan.id,
-            generated_at: plan.generated_at,
-          },
+          metadata: { source_id: plan.id, generated_at: plan.generated_at },
         });
-
       if (docError) throw docError;
     }
 
-    // Save entry embeddings
     for (const entry of entries) {
       const { error: entryError } = await supabase
         .from('entries')
         .update({ is_embedded: true })
         .eq('id', entry.id);
-
       if (entryError) throw entryError;
 
       const { error: docError } = await supabase
@@ -170,19 +157,12 @@ export async function saveEmbeddingsToDB(updatedDocs: any[], userId: string) {
           content: entry.content,
           vector: entry.embedding,
           embedding_model: 'sentence-transformers/all-mpnet-base-v2',
-          metadata: {
-            source_id: entry.id,
-            entry_type: entry.type,
-            timestamp: entry.timestamp,
-          },
+          metadata: { source_id: entry.id, entry_type: entry.type, timestamp: entry.timestamp },
         });
-
       if (docError) throw docError;
     }
 
-    console.log(
-      `Successfully saved ${plans.length} plan embeddings and ${entries.length} entry embeddings`
-    );
+    console.log(`Saved ${plans.length} plan embeddings and ${entries.length} entry embeddings`);
   } catch (error) {
     console.error('Error saving embeddings to database:', error);
     throw error;
