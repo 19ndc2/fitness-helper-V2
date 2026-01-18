@@ -67,6 +67,39 @@ export async function getChatResponse(userId: string, message: string, context?:
   throw new Error('getChatResponse not yet implemented');
 }
 
+class HuggingFaceEmbeddings {
+  apiKey: string;
+  model: string;
+
+  constructor(apiKey: string, model: string) {
+    this.apiKey = apiKey;
+    this.model = model; // e.g., 'sentence-transformers/all-MiniLM-L6-v2'
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    const res = await fetch(`https://api-inference.huggingface.co/pipeline/feature-extraction/${this.model}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ inputs: texts }),
+    });
+
+    if (!res.ok) throw new Error(`HF API Error: ${res.statusText}`);
+    const data = await res.json();
+
+    // Hugging Face returns nested arrays; flatten if needed
+    return data.map((vec: any) => vec.flat());
+  }
+
+  async embedQuery(text: string): Promise<number[]> {
+    return (await this.embedDocuments([text]))[0];
+  }
+}
+
+
+
 
 
 
@@ -113,7 +146,7 @@ export async function makeAiEmbeddings() {
   };
 
 
-  
+
 }
 
 
