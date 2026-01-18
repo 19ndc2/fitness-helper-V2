@@ -62,3 +62,34 @@ export async function getSession() {
   if (error) throw error;
   return data.session;
 }
+/**
+ * Ensure an app_users row exists for the authenticated user (idempotent)
+ * Creates the row if it doesn't exist, updates updated_at if it does
+ */
+export async function ensureAppUser() {
+  const session = await getSession();
+  if (!session?.user) throw new Error('No authenticated user');
+
+  const user = session.user;
+
+  const { data, error } = await supabase
+    .from('app_users')
+    .upsert(
+      {
+        id: user.id,
+        email: user.email ?? null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to ensure app_user:', error);
+    throw error;
+  }
+
+  return data;
+}

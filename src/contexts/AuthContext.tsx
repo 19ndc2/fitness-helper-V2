@@ -18,9 +18,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+      async (event, session) => {
+        try {
+          console.log('Auth state changed:', event, session?.user?.id);
+          setUser(session?.user ?? null);
+        } finally {
+          // Always set loading to false, regardless of session or errors
+          console.log('Setting isLoading to false');
+          setIsLoading(false);
+        }
       }
     );
 

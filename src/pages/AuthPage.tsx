@@ -33,11 +33,16 @@ export default function AuthPage() {
       if (isLogin) {
         await signIn(email, password);
         toast({ title: 'Welcome back!', description: 'Successfully logged in.' });
+        navigate('/goals');
       } else {
         await signUp(email, password, name);
-        toast({ title: 'Account created!', description: 'Welcome to Fitness AI Journal.' });
+        toast({
+          title: 'Account created!',
+          description: 'Please check your email to confirm your account.',
+        });
+        // Don't navigate or call ensureAppUser yet — wait for email confirmation
+        // AuthContext will call ensureAppUser when the session is confirmed
       }
-      navigate('/goals');
     } catch (error) {
       toast({
         title: 'Error',

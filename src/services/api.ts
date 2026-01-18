@@ -2,28 +2,35 @@
  * API Service Layer
  * 
  * This file contains all API calls for the Fitness AI Journal app.
- * Auth is handled via Supabase.
- * Replace the BASE_URL and implement the actual API logic in each function.
+ * Direct Supabase calls for: Goals, Entries, Plans (GET only)
+ * Backend API calls for: Plan generation, Chat (requires AI)
  * 
  * All functions return typed responses and throw errors on failure.
  */
 
+import { createClient } from '@supabase/supabase-js';
 import { getSession } from './supabaseAuth';
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const BASE_URL = '/api'; // Change this to your actual API URL
+const BACKEND_BASE_URL = '/api'; // Backend API for AI operations
 
-// Helper for making authenticated requests
+// Initialize Supabase client for direct database access
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+// Helper for making authenticated requests to backend
 async function fetchWithAuth<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const session = await getSession();
   
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -96,64 +103,152 @@ export interface ChatResponse {
  */
 
 // ============================================================================
-// GOALS ENDPOINTS
+// GOALS ENDPOINTS (Direct Supabase - stored in app_users.goal)
 // ============================================================================
 
 /**
  * GET /api/goals
  * Returns the user's single goal or null if no goal exists
+ * Reads from app_users.goal field
  * Returns: Goal | null
  */
 export async function getGoals(): Promise<Goal | null> {
-  return fetchWithAuth<Goal | null>('/goals');
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('id, goal, created_at, updated_at')
+    .eq('id', session.user.id)
+    .single();
+
+  if (error) throw new Error(error.message);
+  
+  if (!data || !data.goal) return null;
+
+  // Transform app_users row to Goal type
+  return {
+    id: data.id,
+    userId: data.id,
+    text: data.goal,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 /**
  * POST /api/goals
  * Body: { text: string }
- * If a goal already exists, it will be replaced
+ * Creates or replaces the user's goal in app_users.goal
  * Returns: Goal
  */
 export async function createGoal(text: string): Promise<Goal> {
-  return fetchWithAuth<Goal>('/goals', {
-    method: 'POST',
-    body: JSON.stringify({ text }),
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('app_users')
+    .update({
+      goal: text,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', session.user.id)
+    .select('id, goal, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    id: data.id,
+    userId: data.id,
+    text: data.goal,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 /**
  * PUT /api/goals/:id
  * Body: { text: string }
+ * Updates the user's goal in app_users.goal
  * Returns: Goal
  */
 export async function updateGoal(id: string, text: string): Promise<Goal> {
-  return fetchWithAuth<Goal>(`/goals/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ text }),
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('app_users')
+    .update({
+      goal: text,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', session.user.id)
+    .select('id, goal, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    id: data.id,
+    userId: data.id,
+    text: data.goal,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 /**
  * DELETE /api/goals/:id
+ * Clears the user's goal (sets app_users.goal to null)
  * Returns: { success: boolean }
  */
 export async function deleteGoal(id: string): Promise<{ success: boolean }> {
-  return fetchWithAuth<{ success: boolean }>(`/goals/${id}`, {
-    method: 'DELETE',
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('app_users')
+    .update({
+      goal: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', session.user.id);
+
+  if (error) throw new Error(error.message);
+
+  return { success: true };
 }
 
 // ============================================================================
-// ENTRIES (WORKOUT NOTES) ENDPOINTS
+// ENTRIES (WORKOUT NOTES) ENDPOINTS (Direct Supabase)
 // ============================================================================
 
 /**
  * GET /api/entries
- * Query params: ?limit=number&offset=number
+ * Query params: limit and offset for pagination
  * Returns: Entry[]
  */
 export async function getEntries(limit = 50, offset = 0): Promise<Entry[]> {
-  return fetchWithAuth<Entry[]>(`/entries?limit=${limit}&offset=${offset}`);
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('entries')
+    .select('id, user_id, content, created_at, updated_at')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw new Error(error.message);
+
+  return data.map((entry) => ({
+    id: entry.id,
+    userId: entry.user_id,
+    content: entry.content,
+    createdAt: entry.created_at,
+    updatedAt: entry.updated_at,
+  }));
 }
 
 /**
@@ -162,10 +257,28 @@ export async function getEntries(limit = 50, offset = 0): Promise<Entry[]> {
  * Returns: Entry
  */
 export async function createEntry(content: string): Promise<Entry> {
-  return fetchWithAuth<Entry>('/entries', {
-    method: 'POST',
-    body: JSON.stringify({ content }),
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('entries')
+    .insert({
+      user_id: session.user.id,
+      content,
+      type: 'workout_note', // Default type
+    })
+    .select('id, user_id, content, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    content: data.content,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 /**
@@ -174,10 +287,29 @@ export async function createEntry(content: string): Promise<Entry> {
  * Returns: Entry
  */
 export async function updateEntry(id: string, content: string): Promise<Entry> {
-  return fetchWithAuth<Entry>(`/entries/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ content }),
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('entries')
+    .update({
+      content,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('user_id', session.user.id)
+    .select('id, user_id, content, created_at, updated_at')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    content: data.content,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
 /**
@@ -185,9 +317,18 @@ export async function updateEntry(id: string, content: string): Promise<Entry> {
  * Returns: { success: boolean }
  */
 export async function deleteEntry(id: string): Promise<{ success: boolean }> {
-  return fetchWithAuth<{ success: boolean }>(`/entries/${id}`, {
-    method: 'DELETE',
-  });
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('entries')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', session.user.id);
+
+  if (error) throw new Error(error.message);
+
+  return { success: true };
 }
 
 // ============================================================================
@@ -197,15 +338,37 @@ export async function deleteEntry(id: string): Promise<{ success: boolean }> {
 /**
  * GET /api/plan
  * Returns the current AI-generated fitness plan
+ * Direct Supabase query for latest plan
  * Returns: FitnessPlan | null
  */
 export async function getFitnessPlan(): Promise<FitnessPlan | null> {
-  return fetchWithAuth<FitnessPlan | null>('/plan');
+  const session = await getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('plans')
+    .select('id, user_id, plan_text, generated_at')
+    .eq('user_id', session.user.id)
+    .order('generated_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw new Error(error.message); // PGRST116 = no rows
+  
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    content: data.plan_text,
+    generatedAt: data.generated_at,
+  };
 }
 
 /**
  * POST /api/plan/generate
  * Generates a new fitness plan based on goals and entries
+ * Backend API call (requires AI)
  * Returns: FitnessPlan
  */
 export async function generateFitnessPlan(): Promise<FitnessPlan> {
