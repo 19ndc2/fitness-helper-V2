@@ -1,9 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { updateEmbeddings, fetchUnembeddedDocuments, saveEmbeddingsToDB } from './aiService';
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,73 +11,34 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Supabase with service role key (backend only)
-const supabase: SupabaseClient = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
 
-interface Document {
-  id: string;
-  is_embedded: boolean;
-  [key: string]: unknown;
-}
 
-// Health check
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok' });
-});
-
-// Update embeddings helper function
-async function updateEmbeddings(documents: Document[]): Promise<Document[]> {
+// Generate fitness plan endpoint
+app.post('/plan/generate', async (req: Request, res: Response): Promise<void> => {
   try {
-    // TODO: Implement embedding generation with HuggingFace
-    const updatedDocs = documents.map((doc) => ({
-      ...doc,
-      is_embedded: true,
-    }));
-    return updatedDocs;
-  } catch (error) {
-    console.error('Error updating embeddings:', error);
-    throw error;
-  }
-}
+    const userId = req.query.userId as string || req.body.userId;
 
-// Combined getPlan endpoint - fetches unembedded documents and updates embeddings
-app.get('/api/plan', async (req: Request, res: Response): Promise<void> => {
-  try {
-    // Fetch unembedded plans
-    const { data: plans, error: plansError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('is_embedded', false);
+    if (!userId) {
+      res.status(400).json({ error: 'userId is required' });
+      return;
+    }
 
-    if (plansError) throw plansError;
-
-    // Fetch unembedded entries
-    const { data: entries, error: entriesError } = await supabase
-      .from('entries')
-      .select('*')
-      .eq('is_embedded', false);
-
-    if (entriesError) throw entriesError;
+    // Fetch unembedded plans and entries
+    const { plans, entries } = await fetchUnembeddedDocuments();
 
     // Combine and update embeddings
-    const allDocuments = [...(plans || []), ...(entries || [])];
+    const allDocuments = [...plans, ...entries];
     const embeddedDocuments = await updateEmbeddings(allDocuments);
 
+    // Save embeddings to database
+    await saveEmbeddingsToDB(embeddedDocuments, userId);
+
     res.json({
-      plans: plans || [],
-      entries: entries || [],
-      embedded: embeddedDocuments,
+      success: true,
+      message: 'Embeddings generated and saved successfully',
     });
   } catch (error) {
-    console.error('Error in getPlan endpoint:', error);
+    console.error('Error in plan/generate endpoint:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
