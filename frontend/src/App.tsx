@@ -8,8 +8,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import GoalsPage from "@/pages/GoalsPage";
 import EntriesPage from "@/pages/EntriesPage";
-import PlanPage from "@/pages/PlanPage";
-import ChatPage from "@/pages/ChatPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,8 +26,6 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/goals" element={<GoalsPage />} />
                 <Route path="/entries" element={<EntriesPage />} />
-                <Route path="/plan" element={<PlanPage />} />
-                <Route path="/chat" element={<ChatPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

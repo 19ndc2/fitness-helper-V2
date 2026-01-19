@@ -2,8 +2,7 @@
  * API Service Layer
  * 
  * This file contains all API calls for the Fitness AI Journal app.
- * Direct Supabase calls for: Goals, Entries, Plans (GET only)
- * Backend API calls for: Plan generation, Chat (requires AI)
+ * Direct Supabase calls for: Goals, Entries, and Plans
  * 
  * All functions return typed responses and throw errors on failure.
  */
@@ -15,37 +14,11 @@ import { getSession } from './supabaseAuth';
 // CONFIGURATION
 // ============================================================================
 
-const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'; // Backend API for AI operations
-
 // Initialize Supabase client for direct database access
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
-
-// Helper for making authenticated requests to backend
-async function fetchWithAuth<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const session = await getSession();
-  
-  const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
-  }
-
-  return response.json();
-}
 
 // ============================================================================
 // TYPES
@@ -363,42 +336,6 @@ export async function getFitnessPlan(): Promise<FitnessPlan | null> {
     content: data.plan_text,
     generatedAt: data.generated_at,
   };
-}
-
-/**
- * POST /api/plan/generate
- * Generates a new fitness plan based on goals and entries
- * Backend API call (requires AI)
- * Returns: FitnessPlan
- */
-export async function generateFitnessPlan(): Promise<FitnessPlan> {
-  const session = await getSession();
-  
-  if (!session?.user?.id) {
-    throw new Error('User not authenticated');
-  }
-
-  return fetchWithAuth<FitnessPlan>('/plan/generate', {
-    method: 'POST',
-    body: JSON.stringify({ userId: session.user.id }),
-  });
-}
-
-// ============================================================================
-// AI CHAT ENDPOINTS
-// ============================================================================
-
-/**
- * POST /api/chat
- * Send a message to the AI and get a response
- * Body: { message: string }
- * Returns: ChatResponse
- */
-export async function sendChatMessage(message: string): Promise<ChatResponse> {
-  return fetchWithAuth<ChatResponse>('/chat', {
-    method: 'POST',
-    body: JSON.stringify({ message }),
-  });
 }
 
 // ============================================================================
