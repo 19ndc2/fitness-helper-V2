@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Loader2, Calendar, Dumbbell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Sparkles, Calendar, Dumbbell } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import type { FitnessPlan } from '@/services/api';
-import { getFitnessPlan, generateFitnessPlan } from '@/services/api';
+import { getFitnessPlan } from '@/services/api';
 
 export default function PlanPage() {
   const [plan, setPlan] = useState<FitnessPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const { toast } = useToast();
 
@@ -30,23 +28,6 @@ export default function PlanPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    try {
-      const newPlan = await generateFitnessPlan();
-      setPlan(newPlan);
-      toast({ title: 'Plan generated!', description: 'Your new fitness plan is ready.' });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate plan',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -92,24 +73,6 @@ export default function PlanPage() {
       <PageHeader title="AI Plan" subtitle="Your personalized fitness plan" />
 
       <div className="p-4 space-y-4">
-        {/* Generate Button */}
-        <Button
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="w-full gradient-primary text-primary-foreground"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              {plan ? <RefreshCw className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-              {plan ? 'Regenerate Plan' : 'Generate Fitness Plan'}
-            </>
-          )}
-        </Button>
 
         {/* Plan Content */}
         {isLoading ? (

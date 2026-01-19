@@ -1,12 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Target, BookOpen, Sparkles, MessageCircle } from 'lucide-react';
+import { Target, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/goals', icon: Target, label: 'Goals' },
   { to: '/entries', icon: BookOpen, label: 'Entries' },
-  { to: '/plan', icon: Sparkles, label: 'Plan' },
-  { to: '/chat', icon: MessageCircle, label: 'Chat' },
 ];
 
 export function MobileNav() {
