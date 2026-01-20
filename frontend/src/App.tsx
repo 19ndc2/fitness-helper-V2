@@ -17,7 +17,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={import.meta.env.DEV ? "/" : "/fitness-helper-V2"}>
+      <BrowserRouter basename="/">
         <AuthProvider>
           <div className="dark">
             <Routes>
