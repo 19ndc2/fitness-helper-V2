@@ -1,34 +1,22 @@
-# Fitness AI Coach
+# 💪 Fitness Helper V2
 
-A personalized fitness coaching platform that combines goal tracking, workout logging, and AI-powered coaching to help users achieve their fitness goals.
+A personal fitness journal supporting goal tracking and workout logging to help users achieve their fitness goals.
 
 ## Features
 
-- **Goal Management** — Set, track, and manage your fitness goals with progress visualization
-- **Workout Logging** — Record workout entries with timestamps and details for future reference
-- **AI Coach** — Get personalized coaching advice and feedback through an intelligent chat interface
-- **Fitness Plans** — Receive AI-generated personalized workout plans tailored to your goals
-- **User Authentication** — Secure authentication powered by Supabase
-- **Dark Mode** — Sleek dark-themed interface for comfortable viewing
-- **Mobile Responsive** — Fully responsive design that works on desktop and mobile devices
+- **Goal Management 🏆** — Set, track, and manage your fitness goals with progress visualization
+- **Workout Logging 📝** — Record workout entries with timestamps and details for future reference
+- **User Authentication 🧑‍💻** — Secure authentication powered by Supabase
+- **Dark Mode 🌑** — Sleek dark-themed interface for comfortable viewing
+- **Mobile Responsive 📱** — Fully responsive design that works on desktop and mobile devices
 
-## Tech Stack
+## Tech Stack 🛠️
 
-**Frontend:**
-- React 18 with TypeScript
+- React 18 with TypeScript Frontend
 - Vite (build tool)
 - Tailwind CSS (styling)
-- shadcn/ui (component library)
-- React Router v6 (routing)
-- TanStack React Query (data fetching)
-- Recharts (data visualization)
-- React Hook Form + Zod (form validation)
-
-**Backend & Database:**
-- Supabase (authentication & database)
-
-**Deployment:**
-- Vercel
+- Supabase (authentication, database, and backend REST)
+- Vercel Deployment
 
 ## Getting Started
 
@@ -115,13 +103,6 @@ frontend/
 - **Auth** — Login and signup functionality
 - **Goals** — Create and manage fitness goals
 - **Entries** — Log and view workout entries
-- **Chat** — AI coaching assistant
-- **Plan** — View personalized fitness plans
 
-## Contributing
 
-Contributions are welcome! Feel free to submit issues and pull requests.
-
----
-
-Built with ❤️ for UofT Hacks
+Built for UofT Hacks 13
