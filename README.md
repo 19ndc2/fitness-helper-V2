@@ -1,73 +1,127 @@
-# Welcome to your Lovable project
+# Fitness AI Coach
 
-## Project info
+A personalized fitness coaching platform that combines goal tracking, workout logging, and AI-powered coaching to help users achieve their fitness goals.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Goal Management** — Set, track, and manage your fitness goals with progress visualization
+- **Workout Logging** — Record workout entries with timestamps and details for future reference
+- **AI Coach** — Get personalized coaching advice and feedback through an intelligent chat interface
+- **Fitness Plans** — Receive AI-generated personalized workout plans tailored to your goals
+- **User Authentication** — Secure authentication powered by Supabase
+- **Dark Mode** — Sleek dark-themed interface for comfortable viewing
+- **Mobile Responsive** — Fully responsive design that works on desktop and mobile devices
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+**Frontend:**
+- React 18 with TypeScript
+- Vite (build tool)
+- Tailwind CSS (styling)
+- shadcn/ui (component library)
+- React Router v6 (routing)
+- TanStack React Query (data fetching)
+- Recharts (data visualization)
+- React Hook Form + Zod (form validation)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+**Backend & Database:**
+- Supabase (authentication & database)
 
-Changes made via Lovable will be committed automatically to this repo.
+**Deployment:**
+- Vercel
 
-**Use your preferred IDE**
+## Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js (v18 or higher)
+- npm or pnpm package manager
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd fitness-ai-coach
 ```
 
-**Edit a file directly in GitHub**
+2. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Install dependencies:
+```bash
+npm install
+# or
+pnpm install
+```
 
-**Use GitHub Codespaces**
+### Running the Development Server
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run dev
+# or
+pnpm dev
+```
 
-## What technologies are used for this project?
+The application will start at `http://localhost:5173`
 
-This project is built with:
+### Building for Production
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run build
+# or
+pnpm build
+```
 
-## How can I deploy this project?
+### Running Tests
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+npm run test
+# or
+pnpm test
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Environment Setup
 
-Yes, you can!
+Create a `.env.local` file in the `frontend` directory with your Supabase credentials:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Get these values from your Supabase project settings.
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/       # Reusable React components
+│   ├── pages/           # Page components for routing
+│   ├── services/        # API and Supabase integration
+│   ├── contexts/        # React context for global state (Auth)
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility functions
+│   └── App.tsx          # Main app component
+├── public/              # Static assets
+└── package.json         # Project dependencies
+```
+
+## Key Pages
+
+- **Auth** — Login and signup functionality
+- **Goals** — Create and manage fitness goals
+- **Entries** — Log and view workout entries
+- **Chat** — AI coaching assistant
+- **Plan** — View personalized fitness plans
+
+## Contributing
+
+Contributions are welcome! Feel free to submit issues and pull requests.
+
+---
+
+Built with ❤️ for UofT Hacks
