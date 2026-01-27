@@ -2,6 +2,9 @@
 
 A personal fitness journal supporting goal tracking and workout logging to help users achieve their fitness goals.
 
+## 🌐 Live demo
+https://fitness-helper-v2.vercel.app/
+
 ## Features
 
 - **Goal Management 🏆** — Set, track, and manage your fitness goals with progress visualization
